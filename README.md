@@ -1,3 +1,14 @@
+Computer Organization - Spring 2024
+==============================================================
+## Iran Univeristy of Science and Technology
+## Final Project: Executing Verilog Code on LUMOS Processor
+
+- Team Members: 
+- Amirmohammad Salek - 400412265
+- Mohammad Arabzadeh - 400412481
+- Mahdi Ebrahimi Ravesh - 400411009
+- Date: 07/03/2024
+
 # Fixed Point Arithmetic Unit
 
 ## Overview
@@ -128,3 +139,11 @@ The `ready` signal will be asserted when the operation is complete, and the resu
 
 
 ## Result Of The Calculation
+- Mutiplier result
+![Multipier result](./Images/Multiplier_Result.png)
+
+- SQRT result
+![SQRT result](./Images/SQRT_Result.png)
+
+- Final result
+![Final result](./Images/final_result.png)
