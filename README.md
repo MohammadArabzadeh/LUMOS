@@ -1,48 +1,130 @@
-<img src="https://github.com/IUST-Computer-Organization/.github/blob/main/images/CompOrg_orange.png" alt="Image" width="85" height="85" style="vertical-align:middle"> LUMOS RISC-V
-=================================
-> Light Utilization with Multicycle Operational Stages (LUMOS) RISC-V Processor Core
+# Fixed Point Arithmetic Unit
 
-<div align="justify">
+## Overview
 
-## Introduction
-
-**LUMOS** is a multicycle RISC-V processor that implements a subset of `RV32I` instruction set, designed for educational use in computer organization classes at **Iran University of Science and Technology**. It allows for modular design projects, enabling students to gain hands-on experience with processor architecture.
+This Verilog project implements a Fixed Point Arithmetic Unit capable of performing various arithmetic operations on fixed-point numbers. The unit supports addition, subtraction, multiplication, and square root operations. It is designed with parameterizable word width and fractional bits to cater to different precision requirements.
 
 ## Features
 
-- LUMOS executes instructions in multiple stages, such as `instruction_fetch`, `fetch_wait`, `fetch_done`, `decode`, `execute`, `memory_access`, and etc. This approach allows for more complex operations and better utilization of processor resources compared to single-cycle designs. This processor does not support the entire `RV32I` instruction set, which is the base integer instruction set of RISC-V. Instead, it focuses on a subset of instructions that are essential for educational purposes and demonstrating the principles of computer architecture.
+- **Addition**: Performs fixed-point addition of two operands.
+- **Subtraction**: Performs fixed-point subtraction of two operands.
+- **Multiplication**: Performs fixed-point multiplication of two operands using a state machine.
+- **Square Root**: Computes the square root of a fixed-point operand using an iterative method.
 
-- The processor is designed with modularity in mind, allowing students to work on various components of the processor. As part of their course projects, students will design different execution units, such as FPUs, control units, memory interfaces, and other modules that are integral to the processor's functionality.
+## Parameters
 
-## LUMOS Datapath
+- `WIDTH`: Width of the fixed-point number, including integer and fractional bits. Default is 32 bits.
+- `FBITS`: Number of fractional bits. Default is 10 bits.
 
-In a multicycle implementation, we can break down each instruction into a series of steps corresponding to the functional unit operations that are needed. These steps can be used to create a multi-cycle implementation. In this architecture, each step will take 1 clock cycle. This allows that components in the design and different functional units to be used more than once per instruction, as long as it is used on different clock cycles. This sharing of resources can help reduce the amount of hardware required. This classic view of CPU design partitions the design of a processor into data path design and control design. Data path design focuses on the design of ALU and other functional units as well as accessing the registers and memory. Control path design focuses on the design of the state machines to decode instructions and generate the sequence of control signals necessary to appropriately manipulate the data path.
+## Module Description
 
-![Alt text](https://github.com/IUST-Computer-Organization/LUMOS/blob/main/Images/Datapath_1.png "LUMOS Datapath Section 1")
-![Alt text](https://github.com/IUST-Computer-Organization/LUMOS/blob/main/Images/Datapath_2.png "LUMOS Datapath Section 2")
-![Alt text](https://github.com/IUST-Computer-Organization/LUMOS/blob/main/Images/Datapath_3.png "LUMOS Datapath Section 3")
+### Fixed_Point_Unit
 
-## Synthesis
+The `Fixed_Point_Unit` module is the top-level module that orchestrates the different arithmetic operations based on the input control signals.
 
-This processor core is synthesizable in the 45nm CMOS technology node. LUMOS has gone through the RTL-to-GDS flow using *Synopsys Design Compiler* and *Cadence SoC Encounter* tools. At this node, the core can achieve a frequency of **500MHz** while occupying **12000um2** of area and consuming around **3mw** of power.
-</div>
+#### Ports
 
-<!-- ![Alt text](https://github.com/IUST-Computer-Organization/LUMOS/blob/main/LUMOS.png "The LUMOS microprocessor synthesized with Design Compiler and placed and routed by Cadence Encounter" =300x300)  -->
+- `clk`: Clock input.
+- `reset`: Reset input.
+- `operand_1`: First operand for the arithmetic operation.
+- `operand_2`: Second operand for the arithmetic operation.
+- `operation`: Control signal to select the operation (`00` for add, `01` for subtract, `10` for multiply, `11` for square root).
+- `result`: Result of the arithmetic operation.
+- `ready`: Signal indicating the operation is complete and the result is valid.
 
-<picture>
-    <img 
-        alt="The LUMOS microprocessor synthesized with Design Compiler and placed and routed by Cadence Encounter" 
-        src="https://github.com/IUST-Computer-Organization/LUMOS/blob/main/Images/LUMOS.png"
-        width="550" 
-        height="550"
-    > 
-</picture> 
+#### Operations
+
+- **Addition (`FPU_ADD`)**: Adds `operand_1` and `operand_2`.
+- **Subtraction (`FPU_SUB`)**: Subtracts `operand_2` from `operand_1`.
+- **Multiplication (`FPU_MUL`)**: Multiplies `operand_1` and `operand_2` using an internal multiplier module.
+- **Square Root (`FPU_SQRT`)**: Computes the square root of `operand_1` using an iterative method.
+
+### Square Root Circuit
+
+The square root circuit is implemented using a state machine to iteratively compute the square root of the input operand.
+
+#### States
+
+- `IDLE`: Initial state, waiting for the operation to start.
+- `START`: Prepares for the calculation.
+- `CALCULATE`: Iteratively computes the square root.
+- `DONE`: Final state, indicating the calculation is complete.
+
+#### Internal Signals
+
+- `root`: Holds the computed square root.
+- `root_ready`: Indicates when the square root calculation is complete.
+- `sqrt_state`, `sqrt_next_state`: Current and next state of the square root state machine.
+- `sqrt_start`, `sqrt_busy`: Control signals for starting and indicating the busy state of the square root calculation.
+- `x`, `x_next`: Internal variables for the square root calculation.
+- `q`, `q_next`: Quotient registers used in the calculation.
+- `ac`, `ac_next`: Accumulator registers used in the calculation.
+- `test_res`: Temporary result used in the computation.
+- `iteration`: Counter for the number of iterations.
+
+### Multiplier Circuit
+
+The multiplier circuit is implemented using a state machine to handle the multiplication of the input operands.
+
+#### States
+
+- `0`: Initial state, preparing for the multiplication.
+- `1`: Calculates the partial product of the lower halves of the operands.
+- `2`: Calculates the partial product of the upper half of the first operand and the lower half of the second operand.
+- `3`: Calculates the partial product of the lower half of the first operand and the upper half of the second operand.
+- `4`: Calculates the partial product of the upper halves of the operands.
+- `5`: Combines the partial products to produce the final result.
+
+#### Internal Signals
+
+- `product`: Holds the computed product.
+- `product_ready`: Indicates when the multiplication is complete.
+- `mul_state`: Current state of the multiplication state machine.
+- `mul_op1`, `mul_op2`: Input operands for the multiplier.
+- `mul_result`: Result of the multiplication of `mul_op1` and `mul_op2`.
+- `P1`, `P2`, `P3`, `P4`: Partial products used in the multiplication.
+
+### Multiplier Module
+
+The `Multiplier` module performs 16-bit by 16-bit multiplication, producing a 32-bit product. It is instantiated within the `Fixed_Point_Unit` for performing the multiplication operation.
+
+#### Ports
+
+- `operand_1`: First operand for multiplication.
+- `operand_2`: Second operand for multiplication.
+- `product`: Product of the multiplication.
+
+## Usage
+
+To use the `Fixed_Point_Unit`, instantiate the module in your Verilog code, providing appropriate parameters for `WIDTH` and `FBITS`. Connect the inputs and outputs to your design as needed.
+
+```verilog
+Fixed_Point_Unit #(
+    .WIDTH(32),
+    .FBITS(10)
+) fpu (
+    .clk(clk),
+    .reset(reset),
+    .operand_1(operand_1),
+    .operand_2(operand_2),
+    .operation(operation),
+    .result(result),
+    .ready(ready)
+);
+```
+
+Control the operation using the `operation` signal:
+- `2'b00`: Addition
+- `2'b01`: Subtraction
+- `2'b10`: Multiplication
+- `2'b11`: Square Root
+
+The `ready` signal will be asserted when the operation is complete, and the result will be available on the `result` output.
+
+## File Structure
+
+- `Fixed_Point_Unit.v`: Contains the Verilog code for the Fixed Point Unit and the Multiplier module.
+- `Defines.vh`: Header file containing the operation definitions (`FPU_ADD`, `FPU_SUB`, `FPU_MUL`, `FPU_SQRT`).
 
 
-## Copyright
-
-Permission to use, copy, modify, and/or distribute this software for any purpose with or without fee is hereby granted, provided that the above copyright notice and this permission notice appear in all copies.
-
-Copyright 2024 Iran University of Science and Technology - iustCompOrg@gmail.com  
-
-</div>
+## Result Of The Calculation
